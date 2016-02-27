@@ -22,15 +22,23 @@ module Ptilinopus
       response = self.class.send(type, API_PATH + method, body: params.to_json, headers: DEFAULT_HEADER)
 
       if response.code != 200
+        message = response.body
+        if parsed_message = JSON.parse(response.body)
+          message = parsed_message["message"]
+        end
+        message = "#{message} (Response code: #{response.code})"
+
         case response.code
         when 400
-          raise MailerliteInvalidMethodError.new
+          raise MailerliteInvalidMethodError.new(message)
         when 401
-          raise MailerliteInvalidApiKeyError.new
+          raise MailerliteInvalidApiKeyError.new(message)
         when 404
-          raise MailerliteBadRequestItemError.new
+          raise MailerliteBadRequestItemError.new(message)
+        when 409
+          raise MailerliteConflictError.new(message)
         else
-          raise MailerliteServerError.new
+          raise MailerliteServerError.new(message)
         end
       end
 
